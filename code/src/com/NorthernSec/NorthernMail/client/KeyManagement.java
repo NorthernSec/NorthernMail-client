@@ -18,7 +18,7 @@ public class KeyManagement {
 		conf=new ConfigReader();
 	}
 	
-	public void generateKeypair(int size, String name) throws EncryptionException, IOException{
+	public void generateKeypair(int size, String name, String password) throws EncryptionException, IOException{
 		try {
 			//Generate keys
 			final KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA");
@@ -33,12 +33,16 @@ public class KeyManagement {
 			//Create files
 			privKey.createNewFile();
 			pubKey.createNewFile();
+			final Cipher cipher=Cipher.getInstance("AES/CBC/PKCS5Padding");
+			SecretKeySpec sks = new SecretKeySpec(shaCreate(password), "AES");
+			cipher.init(Cipher.ENCRYPT_MODE, secKey);
 			ObjectOutputStream oospub = new ObjectOutputStream(new FileOutputStream(pubKey));
-			ObjectOutputStream oospriv = new ObjectOutputStream(new FileOutputStream(privKey));
+			CipherOutputStream cospriv = new CipherOutputStream (new FileOutputStream(privKey), sks);
+			
 			oospub.writeObject(keys.getPublic());
-			oospriv.writeObject(keys.getPrivate());
+			cospriv.writeObject(keys.getPrivate());
 			oospub.close();
-			oospriv.close();
+			cospriv.close();
 		} catch (NoSuchAlgorithmException e) {
 			throw new EncryptionException(e);
 		}
@@ -47,4 +51,16 @@ public class KeyManagement {
 		File pubKey = new File(conf.getKeyLocation()+key+"-public.key");
 		
 	}
+	
+	private static byte[] shaKeyCreate(String pass){
+        try{
+		String key = pass;
+		MessageDigest md = MessageDigest.getInstance("SHA-256");
+		md.update(key.getBytes("UTF-8"));
+		byte[] longdigest = md.digest();
+		byte[] digest = new byte[16];
+		System.arraycopy(longdigest, 0, digest, 0, 16);
+		return digest;
+        }catch(NoSuchAlgorithmException | UnsupportedEncodingException e){return null;}
+    }
 }
