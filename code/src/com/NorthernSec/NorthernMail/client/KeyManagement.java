@@ -1,12 +1,26 @@
 package com.NorthernSec.NorthernMail.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SealedObject;
+import javax.crypto.spec.SecretKeySpec;
 
 import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
 
@@ -18,7 +32,7 @@ public class KeyManagement {
 		conf=new ConfigReader();
 	}
 	
-	public void generateKeypair(int size, String name, String password) throws EncryptionException, IOException{
+	public void generateKeypair(int size, String name, String password) throws EncryptionException, IOException, InvalidKeyException{
 		try {
 			//Generate keys
 			final KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA");
@@ -33,17 +47,22 @@ public class KeyManagement {
 			//Create files
 			privKey.createNewFile();
 			pubKey.createNewFile();
-			final Cipher cipher=Cipher.getInstance("AES/CBC/PKCS5Padding");
-			SecretKeySpec sks = new SecretKeySpec(shaCreate(password), "AES");
-			cipher.init(Cipher.ENCRYPT_MODE, secKey);
+			Object objPriv = null;
+			if(password.length()>0 && password != null){
+				final Cipher cipher=Cipher.getInstance("AES/CBC/PKCS5Padding");
+				final SecretKeySpec sks = new SecretKeySpec(shaCreate(password), "AES");
+				cipher.init(Cipher.ENCRYPT_MODE, sks);
+				SealedObject soPriv = new SealedObject(keys.getPrivate(), cipher);
+			}else{
+				objPriv = keys.getPrivate();
+			}
 			ObjectOutputStream oospub = new ObjectOutputStream(new FileOutputStream(pubKey));
-			CipherOutputStream cospriv = new CipherOutputStream (new FileOutputStream(privKey), sks);
-			
+			ObjectOutputStream oospriv = new ObjectOutputStream(new FileOutputStream(privKey));
 			oospub.writeObject(keys.getPublic());
-			cospriv.writeObject(keys.getPrivate());
+			oospriv.writeObject(objPriv);
 			oospub.close();
-			cospriv.close();
-		} catch (NoSuchAlgorithmException e) {
+			oospriv.close();
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException e) {
 			throw new EncryptionException(e);
 		}
 	}
@@ -51,8 +70,27 @@ public class KeyManagement {
 		File pubKey = new File(conf.getKeyLocation()+key+"-public.key");
 		
 	}
+	public PrivateKey getPrivKey(String name, String password) throws InvalidKeyException{
+		File privKey = new File(conf.getKeyLocation()+name+"-private.key");
+		PrivateKey key = null;
+		if(password.length()>0 && password != null){
+			try {
+				final SecretKeySpec sks = new SecretKeySpec(shaCreate(password), "AES");
+				Cipher cipher;
+				cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+				cipher.init(Cipher.DECRYPT_MODE, sks);
+				ObjectInputStream oisPriv = new ObjectInputStream(new FileInputStream(privKey));
+				SealedObject soKey = (SealedObject)(oisPriv.readObject());
+				key = (PrivateKey)soKey.getObject(cipher);
+			} catch (NoSuchPaddingException | NoSuchAlgorithmException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+			}
+		}else{
+			//TODO: read file without 'decrypting'
+		}
+		return key;
+	}
 	
-	private static byte[] shaKeyCreate(String pass){
+	private static byte[] shaCreate(String pass){
         try{
 		String key = pass;
 		MessageDigest md = MessageDigest.getInstance("SHA-256");
