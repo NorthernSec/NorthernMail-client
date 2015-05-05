@@ -13,72 +13,80 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+
+import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
 
 public class ConnectionHandler {
   private Socket socClient;
   private DataInputStream disIn;
   private DataOutputStream dosOut;
+  private Cipher cipAES;
+  private SecretKey keyAES;
   
-  private String VERSION="NorthernMail Client v0.0 beta";
   
-  private void sendData(String data)throws IOException{
+  public void aesSend(byte[] data) throws InvalidKeyException, IOException, EncryptionException{
+	byte[] iv = new byte[32];
+	new Random().nextBytes(iv);
+	try {
+      cipAES.init(Cipher.ENCRYPT_MODE, keyAES, new IvParameterSpec(iv));
+      byte[] encrypted = cipAES.doFinal(data);
+      ByteArrayOutputStream baos=new ByteArrayOutputStream();
+      //Prepend iv to data
+      baos.write(iv);
+      baos.write(encrypted);
+      send(baos.toByteArray());
+    } catch (InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+      throw new EncryptionException(e);
+	}
+  }
+  public void send(byte[] data)throws IOException{
+	//split message in case it is too big
 	//Prepend the length of the message to the byte array
-	byte[] length=ByteBuffer.allocate(4).putInt(data.length()).array();
+	byte[] length=ByteBuffer.allocate(4).putInt(data.length).array();
 	ByteArrayOutputStream baos=new ByteArrayOutputStream();
 	baos.write(length);
-	baos.write(data.getBytes());
+	baos.write(data);
 	dosOut.write(baos.toByteArray());
   }
-  public ConnectionHandler(){
-	  
+  
+  public byte[] receive() throws IOException{
+	byte[] blen = new byte[4];
+	disIn.read(blen);
+	int len = ByteBuffer.wrap(blen).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	byte[] returndata = new byte[len];
+    disIn.readFully(returndata);
+    return returndata;
   }
-  private String fetchMail(){
-	String mails = "";
-	try{
-	  sendData("Fetch::"+VERSION);
-	  byte[] blen = new byte[4];
-	  disIn.read(blen);
-	  System.out.println(blen[0]&0xff);
-	  int len = ByteBuffer.wrap(blen).order(ByteOrder.LITTLE_ENDIAN).getInt();
-	  System.out.println(len);
-	  byte[] returndata = new byte[len];
-	  disIn.readFully(returndata);
-	  return new String(returndata);
-	}catch(Exception e){
-      System.out.println(e);
-		//TODO raise not connected except
-	}
-	return mails;
-  }
-  private void initiationsequence(){
-	
-  }
-  public void connect(String host, int port){
-    String strData;
-	try{
-	  socClient = new Socket(host,port);
-      disIn = new DataInputStream(socClient.getInputStream());
-      dosOut = new DataOutputStream(socClient.getOutputStream());
-      String mail = fetchMail();
-      System.out.println(mail);
-      //TODO connection sequence
-      //while(true){
-      //	if ((strData=disIn.read)!=null){
-      //    System.out.println(strData);
-      //	}
-      	
-      //}
-	}catch(Exception e){
-	  System.out.println(e);
+  private void initiationsequence() throws EncryptionException{
+	KeyGenerator keyGen;
+	try {
+		keyGen = KeyGenerator.getInstance("AES");
+		keyGen.init(256);
+	    cipAES = Cipher.getInstance("AES");
+	    keyAES = keyGen.generateKey();
+	} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+      throw new EncryptionException("Could not generate temporary AES key");
 	}
   }
-  /**
-   * @param args
-   */
-  public static void main(String[] args) {
-	// TODO Auto-generated method stub
-	ConnectionHandler c = new ConnectionHandler();
-	c.connect("localhost", 5002);
+  public void connect(String host, int port) throws UnknownHostException, IOException{
+    socClient = new Socket(host,port);
+    disIn = new DataInputStream(socClient.getInputStream());
+    dosOut = new DataOutputStream(socClient.getOutputStream());
+    //initiationsequence();
+    //System.out.println(keyAES);
+    //send("INIT::".getBytes());
+  }
+  public void close() throws IOException{
+	  dosOut.close();
+	  disIn.close();
+	  socClient.close();
   }
 
 }
