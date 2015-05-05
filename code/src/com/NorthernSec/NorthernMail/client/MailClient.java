@@ -1,7 +1,9 @@
 package com.NorthernSec.NorthernMail.client;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -19,11 +21,13 @@ import com.NorthernSec.NorthernMail.connection.ConnectionHandler;
 
 public class MailClient {
   private ConnectionHandler con;
+  private KeyManagement keyMan;
 
-  private String VERSION="NorthernMail Client v0.0 beta";
+  final private String VERSION="NorthernMail Client v0.0 beta";
 
   public MailClient(){
 	con=new ConnectionHandler();
+	
   }
   
   public void connect(String host, int port) throws UnknownHostException, IOException{
@@ -51,31 +55,13 @@ public class MailClient {
 	}
   }
   
-  public void generateKeypair(int size, String name) throws EncryptionException, IOException{
-	  try {
-		//Generate keys
-		final KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA");
-		keygen.initialize(size);
-		final KeyPair keys = keygen.generateKeyPair();
-		//TODO get file location from config
-		File privKey=new File(name+"-private.key");
-		File pubKey=new File(name+"-public.key");
-		//Create parent dirs
-		if (privKey.getParentFile() != null){privKey.getParentFile().mkdir();}
-		if (pubKey.getParentFile() != null){pubKey.getParentFile().mkdir();}
-		//Create files
-		privKey.createNewFile();
-		pubKey.createNewFile();
-	} catch (NoSuchAlgorithmException e) {
-		throw new EncryptionException(e);
-	}
-  }
-  
   public static void main(String[] args){
 	  try{
 		  MailClient mc = new MailClient();
 		  mc.connect("127.0.0.1", 5002);
 		  System.out.println(mc.fetchMail());
+		  //keyMan.generateKeypair(4096, "testkey");
+		  mc.sendMail("some test mail", "testkey" , true);
 	  } catch (Exception e){
 		  e.printStackTrace();
 	  }
