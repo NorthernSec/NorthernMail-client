@@ -2,6 +2,7 @@ package com.NorthernSec.NorthernMail.client;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -13,6 +14,7 @@ import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -66,11 +68,12 @@ public class KeyManagement {
 			throw new EncryptionException(e);
 		}
 	}
-	public void getPublicKey(String key){
+	public PublicKey getPublicKey(String key) throws FileNotFoundException, IOException, ClassNotFoundException{
 		File pubKey = new File(conf.getKeyLocation()+key+"-public.key");
-		
+		ObjectInputStream oisPriv = new ObjectInputStream(new FileInputStream(pubKey));
+		return (PublicKey)oisPriv.readObject();
 	}
-	public PrivateKey getPrivKey(String name, String password) throws InvalidKeyException{
+	public PrivateKey getPrivKey(String name, String password) throws InvalidKeyException, FileNotFoundException, IOException, ClassNotFoundException, EncryptionException{
 		File privKey = new File(conf.getKeyLocation()+name+"-private.key");
 		PrivateKey key = null;
 		if(password.length()>0 && password != null){
@@ -82,10 +85,12 @@ public class KeyManagement {
 				ObjectInputStream oisPriv = new ObjectInputStream(new FileInputStream(privKey));
 				SealedObject soKey = (SealedObject)(oisPriv.readObject());
 				key = (PrivateKey)soKey.getObject(cipher);
-			} catch (NoSuchPaddingException | NoSuchAlgorithmException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+			} catch (NoSuchPaddingException | NoSuchAlgorithmException | IllegalBlockSizeException | BadPaddingException e) {
+				throw new EncryptionException(e);
 			}
 		}else{
-			//TODO: read file without 'decrypting'
+			ObjectInputStream oisPriv = new ObjectInputStream(new FileInputStream(privKey));
+			key=(PrivateKey)oisPriv.readObject();
 		}
 		return key;
 	}

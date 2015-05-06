@@ -1,13 +1,8 @@
 package com.NorthernSec.NorthernMail.client;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
@@ -15,6 +10,8 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+
+import org.json.simple.JSONObject;
 
 import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
 import com.NorthernSec.NorthernMail.connection.ConnectionHandler;
@@ -27,7 +24,7 @@ public class MailClient {
 
   public MailClient(){
 	con=new ConnectionHandler();
-	
+	keyMan=new KeyManagement();
   }
   
   public void connect(String host, int port) throws UnknownHostException, IOException{
@@ -43,13 +40,16 @@ public class MailClient {
 	  return new String(con.receive());
   }
   
-  public void sendMail(String mail,PublicKey key, Boolean sign) throws EncryptionException, InvalidKeyException, IOException{
+  public void sendMail(String mail,String key, Boolean sign) throws EncryptionException, InvalidKeyException, IOException, ClassNotFoundException{
 	  try {
-		final Cipher cipher = Cipher.getInstance("RSA");
-		cipher.init(Cipher.ENCRYPT_MODE, key);
-		String data = "";
-		con.aesSend(cipher.doFinal(data.getBytes()));
-		//TODO: complete encryption
+		  PublicKey pubKey =keyMan.getPublicKey(key);
+		  final Cipher cipher = Cipher.getInstance("RSA");
+		  cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+		  String data = "";
+		  //TODO get json library
+		  JSONObject json = new JSONObject();
+		  //TODO: replace send with con.aesSend(cipher.doFinal(data.getBytes()));
+		  //TODO: complete encryption
 	} catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
 		throw new EncryptionException(e);
 	}
@@ -62,6 +62,7 @@ public class MailClient {
 		  System.out.println(mc.fetchMail());
 		  //keyMan.generateKeypair(4096, "testkey");
 		  mc.sendMail("some test mail", "testkey" , true);
+		  mc.close();
 	  } catch (Exception e){
 		  e.printStackTrace();
 	  }
