@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import javax.crypto.BadPaddingException;
@@ -14,17 +15,18 @@ import javax.crypto.NoSuchPaddingException;
 import org.json.simple.JSONObject;
 
 import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
+import com.NorthernSec.NorthernMail.Objects.Mail;
 import com.NorthernSec.NorthernMail.connection.ConnectionHandler;
 
 public class MailClient {
   private ConnectionHandler con;
-  private KeyManagement keyMan;
+  private KeyManager keyMan;
 
   final private String VERSION="NorthernMail Client v0.0 beta";
 
   public MailClient(){
 	con=new ConnectionHandler();
-	keyMan=new KeyManagement();
+	keyMan=new KeyManager();
   }
   
   public void connect(String host, int port) throws UnknownHostException, IOException{
@@ -36,23 +38,18 @@ public class MailClient {
   }
   
   public String fetchMail() throws InvalidKeyException, IOException, EncryptionException{
-	  con.send(("Fetch::"+VERSION).getBytes());
+	  con.send(("FETCH::"+VERSION).getBytes());
 	  return new String(con.receive());
   }
-  
-  public void sendMail(String mail,String key, Boolean sign) throws EncryptionException, InvalidKeyException, IOException, ClassNotFoundException{
-	  try {
-		  PublicKey pubKey =keyMan.getPublicKey(key);
-		  final Cipher cipher = Cipher.getInstance("RSA");
-		  cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-		  String data = "";
-		  //TODO get json library
-		  JSONObject json = new JSONObject();
-		  //TODO: replace send with con.aesSend(cipher.doFinal(data.getBytes()));
-		  //TODO: complete encryption
-	} catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
-		throw new EncryptionException(e);
-	}
+    
+  public void sendMail(Mail mail) throws IOException, InvalidKeyException, EncryptionException{
+	  JSONObject j = new JSONObject();
+	  j.put("command","POST");
+	  j.put("version", VERSION);
+	  j.put("mail", mail.getReadyMail());
+	  con.send((j.toJSONString()).getBytes());
+	  //TODO: replace send with con.aesSend(cipher.doFinal(data.getBytes()))
+	  //TODO: complete encryption
   }
   
   public static void main(String[] args){
@@ -61,7 +58,7 @@ public class MailClient {
 		  mc.connect("127.0.0.1", 5002);
 		  System.out.println(mc.fetchMail());
 		  //keyMan.generateKeypair(4096, "testkey");
-		  mc.sendMail("some test mail", "testkey" , true);
+		  mc.sendMail("some test mail", "testkey", true, "privKey");
 		  mc.close();
 	  } catch (Exception e){
 		  e.printStackTrace();

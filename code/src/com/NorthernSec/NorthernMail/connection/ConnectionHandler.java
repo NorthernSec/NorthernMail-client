@@ -30,7 +30,7 @@ public class ConnectionHandler {
   private Cipher cipAES;
   private SecretKey keyAES;
   
-  
+  //TODO compression has to be added
   public void aesSend(byte[] data) throws InvalidKeyException, IOException, EncryptionException{
 	byte[] iv = new byte[32];
 	new Random().nextBytes(iv);
@@ -47,7 +47,7 @@ public class ConnectionHandler {
 	}
   }
   public void send(byte[] data)throws IOException{
-	//split message in case it is too big
+	//TODO: split message in case it is too big
 	//Prepend the length of the message to the byte array
 	byte[] length=ByteBuffer.allocate(4).putInt(data.length).array();
 	ByteArrayOutputStream baos=new ByteArrayOutputStream();
