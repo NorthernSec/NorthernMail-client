@@ -23,37 +23,34 @@ public class KeyManager {
 	private ArrayList<PubKey> publicKeys;
 	private ArrayList<PrivKey> privateKeys;
 	
+	public KeyManager(){
+		publicKeys=new ArrayList<PubKey>();privateKeys=new ArrayList<PrivKey>();}
+	
 	public PubKey getPubKey(String name){
 		for(PubKey key:publicKeys){
 			if(key.getName().equals(name)){return key;}
-		}return null;
-	}
+		}return null;}
+	public PubKey[] getPubKeys(){return (PubKey[])publicKeys.toArray();}
 	public void addPubKey(PubKey key) throws AlreadyExistsException{
 		if (getPubKey(key.getName())!=null){
 			throw new AlreadyExistsException("A key with this name already exists");}
-		publicKeys.add(key);
-	}
+		publicKeys.add(key);}
 	public void removePubKey(String name){
 		for(PubKey key:publicKeys){
-			if(key.getName().equals(name)){publicKeys.remove(key);}
-		}
-	}
+			if(key.getName().equals(name)){publicKeys.remove(key);}}}
 	
 	public PrivKey getPrivKey(String name){
 		for(PrivKey key:privateKeys){
-			if(key.getName().equals(name)){return key;}
-		}return null;
-	}
+			if(key.getName().equals(name)){return key;}}
+		return null;}
+	public PrivKey[] getPrivKeys(){return (PrivKey[])privateKeys.toArray();}
 	public void addPrivKey(PrivKey key) throws AlreadyExistsException{
 		if (getPrivKey(key.getName())!=null){
 			throw new AlreadyExistsException("A key with this name already exists");}
-		privateKeys.add(key);
-	}
+		privateKeys.add(key);}
 	public void removePrivKey(String name){
 		for(PrivKey key:privateKeys){
-			if(key.getName().equals(name)){privateKeys.remove(key);}
-		}
-	}
+			if(key.getName().equals(name)){privateKeys.remove(key);}}}
 
 	
 	public void generateKeypair(int size, String name, String password) throws EncryptionException, IOException, InvalidKeyException, AlreadyExistsException{
@@ -72,13 +69,10 @@ public class KeyManager {
 				cipher.init(Cipher.ENCRYPT_MODE, sks);
 				privKey = new PrivKey(name, new SealedObject(keys.getPrivate(), cipher));
 			}else{
-				privKey = new PrivKey(name,keys.getPrivate());
-			}
+				privKey = new PrivKey(name,keys.getPrivate());}
 			addPubKey(pubKey);
 			addPrivKey(privKey);
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException e) {
-			throw new EncryptionException(e);
-		}
-	}
+			throw new EncryptionException(e);}}
 	
 }

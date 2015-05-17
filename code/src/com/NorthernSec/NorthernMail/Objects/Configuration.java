@@ -12,4 +12,8 @@ public class Configuration {
 	}
 	
 	public KeyManager getKeyManager(){return keyMan;}
+	
+	public void save(){
+		//save to disk
+	}
 }

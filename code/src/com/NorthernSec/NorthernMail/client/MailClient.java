@@ -3,19 +3,18 @@ package com.NorthernSec.NorthernMail.client;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.util.ArrayList;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
-import com.NorthernSec.NorthernMail.Objects.Mail;
+import com.NorthernSec.NorthernMail.Exceptions.InvalidMailException;
+import com.NorthernSec.NorthernMail.Objects.Configuration;
+import com.NorthernSec.NorthernMail.Objects.Mail.Mail;
+import com.NorthernSec.NorthernMail.Objects.Mail.MailTemplate;
 import com.NorthernSec.NorthernMail.connection.ConnectionHandler;
 
 public class MailClient {
@@ -37,12 +36,27 @@ public class MailClient {
 	  con.close();
   }
   
-  public String fetchMail() throws InvalidKeyException, IOException, EncryptionException{
-	  con.send(("FETCH::"+VERSION).getBytes());
-	  return new String(con.receive());
+  public Mail[] fetchMail() throws IOException, ParseException{
+	  JSONObject j = new JSONObject();
+	  j.put("command","FETCH");
+	  j.put("version", VERSION);
+	  con.send((j.toJSONString()).getBytes());
+	  
+	  JSONObject jResult = (JSONObject)new JSONParser().parse(new String(con.receive()));
+	  JSONArray mails = (JSONArray)jResult.get("mails");
+	  ArrayList<Mail> myMails = new ArrayList<Mail>();
+	  for(int i=0;i<mails.size();i++){
+		  try{
+			  JSONObject mail = (JSONObject)mails.get(i);
+			  Mail m = new Mail((String)mail.get("subject"),(String)mail.get("message"),(String)mail.get("signature"),(String)mail.get("token"));
+			  if(m.isDecryptable(keyMan)){
+				  myMails.add(m);}
+		  }catch (InvalidMailException e){}}
+	  return (Mail[])myMails.toArray();
+	  //return new String(con.receive());
   }
     
-  public void sendMail(Mail mail) throws IOException, InvalidKeyException, EncryptionException{
+  public void sendMail(MailTemplate mail) throws IOException, InvalidKeyException, EncryptionException, InvalidMailException{
 	  JSONObject j = new JSONObject();
 	  j.put("command","POST");
 	  j.put("version", VERSION);
@@ -54,12 +68,27 @@ public class MailClient {
   
   public static void main(String[] args){
 	  try{
-		  MailClient mc = new MailClient();
-		  mc.connect("127.0.0.1", 5002);
-		  System.out.println(mc.fetchMail());
+		  Configuration c = new Configuration();
+		  c.getKeyManager().generateKeypair(2048, "DummyKeyPair1", null);
+		  c.getKeyManager().generateKeypair(1337, "DummyKeyPair2", null);
+		  c.getKeyManager().generateKeypair(2048, "alice", null);
+		  c.getKeyManager().removePrivKey("alice");
+		  c.getKeyManager().generateKeypair(2048, "bob", null);
+		  c.getKeyManager().removePrivKey("bob");
+		  c.save();
+		  // MailClient mc = new MailClient();
+		  //mc.connect("127.0.0.1", 5002);
+		  //Thread.sleep(1000);
+		  //System.out.println("Fetching mails:");
+		  //System.out.println(mc.fetchMail());
 		  //keyMan.generateKeypair(4096, "testkey");
-		  mc.sendMail("some test mail", "testkey", true, "privKey");
-		  mc.close();
+		  //MailTemplate m = new MailTemplate();
+		  //m.setSubject("Hello world!");
+		  //m.setMessage("dummy test message");
+		  //System.out.println("Sending mail:");
+		  //System.out.println(m.getReadyMail());
+		  //mc.sendMail(m);
+		  //mc.close();
 	  } catch (Exception e){
 		  e.printStackTrace();
 	  }
