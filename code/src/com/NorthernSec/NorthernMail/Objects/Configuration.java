@@ -1,10 +1,11 @@
 package com.NorthernSec.NorthernMail.Objects;
 
-import javax.crypto.SealedObject;
+import java.io.Serializable;
 
 import com.NorthernSec.NorthernMail.client.KeyManager;
 
-public class Configuration {
+public class Configuration implements Serializable{
+	private static final long serialVersionUID = 1L;
 	private KeyManager keyMan;
 	
 	public Configuration(){
@@ -13,7 +14,5 @@ public class Configuration {
 	
 	public KeyManager getKeyManager(){return keyMan;}
 	
-	public void save(){
-		//save to disk
-	}
+	
 }

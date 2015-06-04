@@ -1,8 +1,10 @@
 package com.NorthernSec.NorthernMail.Objects;
 
+import java.io.Serializable;
 import java.security.PublicKey;
 
-public class PubKey {
+public class PubKey implements Serializable{
+	private static final long serialVersionUID = 1L;
 	private String name;
 	private PublicKey key;
 	private String comments;

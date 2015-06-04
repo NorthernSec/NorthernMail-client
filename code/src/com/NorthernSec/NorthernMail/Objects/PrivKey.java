@@ -1,6 +1,7 @@
 package com.NorthernSec.NorthernMail.Objects;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -15,7 +16,8 @@ import javax.crypto.spec.SecretKeySpec;
 import com.NorthernSec.NorthernMail.Exceptions.EncryptionException;
 import com.NorthernSec.NorthernMail.Exceptions.PrivKeyEncryptedException;
 
-public class PrivKey {
+public class PrivKey implements Serializable{
+	private static final long serialVersionUID = 1L;
 	private String name;
 	private Object key;
 	private String comments;

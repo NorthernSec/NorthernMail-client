@@ -27,14 +27,16 @@ public class MailClient {
 	con=new ConnectionHandler();
 	keyMan=new KeyManager();
   }
+  public MailClient(Configuration c){
+	  con=new ConnectionHandler();
+	  keyMan=c.getKeyManager();
+  }
   
   public void connect(String host, int port) throws UnknownHostException, IOException{
-	  con.connect(host, port);
-  }
+	  con.connect(host, port);}
   
   public void close() throws IOException{
-	  con.close();
-  }
+	  con.close();}
   
   public Mail[] fetchMail() throws IOException, ParseException{
 	  JSONObject j = new JSONObject();
@@ -52,7 +54,8 @@ public class MailClient {
 			  if(m.isDecryptable(keyMan)){
 				  myMails.add(m);}
 		  }catch (InvalidMailException e){}}
-	  return (Mail[])myMails.toArray();
+	  System.out.println(myMails.size());
+	  return myMails.toArray(new Mail[myMails.size()]);
 	  //return new String(con.receive());
   }
     
@@ -67,28 +70,37 @@ public class MailClient {
   }
   
   public static void main(String[] args){
+	  //TODO replace all language based strings with enums
 	  try{
-		  Configuration c = new Configuration();
-		  c.getKeyManager().generateKeypair(2048, "DummyKeyPair1", null);
-		  c.getKeyManager().generateKeypair(1337, "DummyKeyPair2", null);
-		  c.getKeyManager().generateKeypair(2048, "alice", null);
-		  c.getKeyManager().removePrivKey("alice");
-		  c.getKeyManager().generateKeypair(2048, "bob", null);
-		  c.getKeyManager().removePrivKey("bob");
-		  c.save();
-		  // MailClient mc = new MailClient();
-		  //mc.connect("127.0.0.1", 5002);
-		  //Thread.sleep(1000);
-		  //System.out.println("Fetching mails:");
-		  //System.out.println(mc.fetchMail());
-		  //keyMan.generateKeypair(4096, "testkey");
-		  //MailTemplate m = new MailTemplate();
-		  //m.setSubject("Hello world!");
-		  //m.setMessage("dummy test message");
-		  //System.out.println("Sending mail:");
-		  //System.out.println(m.getReadyMail());
-		  //mc.sendMail(m);
-		  //mc.close();
+		  ConfigReader cr = new ConfigReader();
+		  //cr.create("/home/snorelax/NorthernMail.nmc");
+		  //Configuration c = cr.getConf();
+		  //c.getKeyManager().generateKeypair(2048, "DummyKeyPair1", null);
+		  //c.getKeyManager().generateKeypair(1337, "DummyKeyPair2", null);
+		  //c.getKeyManager().generateKeypair(2048, "alice", null);
+		  //c.getKeyManager().removePrivKey("alice");
+		  //c.getKeyManager().generateKeypair(2048, "bob", null);
+		  //c.getKeyManager().removePrivKey("bob");
+		  //cr.save();
+		  cr.load("/home/snorelax/NorthernMail.nmc");
+		  MailClient mc = new MailClient(cr.getConf());
+		  KeyManager keyMan = cr.getConf().getKeyManager();
+		  mc.connect("127.0.0.1", 5002);
+		  Thread.sleep(1000);
+		  //send
+		  MailTemplate m = new MailTemplate();
+		  m.setSubject("Hello world!");
+		  m.setMessage("dummy test message");
+		  m.encryptWith(keyMan.getPubKey("DummyKeyPair1").getKey());
+		  System.out.println("Sending mail:");
+		  System.out.println(m.getReadyMail());
+		  mc.sendMail(m);
+		  //fetch
+		  System.out.println("Fetching mails:");
+		  for (Mail mail:mc.fetchMail()){
+			  System.out.println(mail.decrypt(keyMan).getSubject());
+		  }
+		  mc.close();
 	  } catch (Exception e){
 		  e.printStackTrace();
 	  }

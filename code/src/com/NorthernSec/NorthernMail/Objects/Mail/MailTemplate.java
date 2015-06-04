@@ -1,5 +1,6 @@
 package com.NorthernSec.NorthernMail.Objects.Mail;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -47,17 +48,18 @@ public class MailTemplate {
 			final Cipher cipher = Cipher.getInstance("RSA");
 			if(publicKey != null){
 				cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-				strMess=b64.encode(cipher.doFinal(message.getBytes()));
-				strSubj=b64.encode(cipher.doFinal(subject.getBytes()));
+				strMess=b64.encode(cipher.doFinal(Util.compress(message.getBytes())));
+				strSubj=b64.encode(cipher.doFinal(Util.compress(subject.getBytes())));
 				String strSalt = new BigInteger(130, new SecureRandom()).toString();
-				strToken = strSalt+"::"+b64.encode(cipher.doFinal((strSalt+strToken).getBytes()));
+				byte[] compressed = Util.compress((strSalt+strToken).getBytes());
+				strToken = strSalt+"::"+b64.encode(cipher.doFinal(compressed));
 			}
 			if(signature != null){
 				byte[] digest = Util.shaCreate(message);
 				cipher.init(Cipher.ENCRYPT_MODE, signature);
-				mail.put("signature", b64.encode(cipher.doFinal(digest)));
+				mail.put("signature", b64.encode(cipher.doFinal(Util.compress(digest))));
 			}
-		}catch(IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e){
+		}catch(IOException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e){
 			throw new EncryptionException(e);
 		}
 		mail.put("subject", strSubj);

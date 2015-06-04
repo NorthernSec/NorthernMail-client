@@ -1,11 +1,13 @@
 package com.NorthernSec.NorthernMail.client;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -19,7 +21,8 @@ import com.NorthernSec.NorthernMail.Objects.PrivKey;
 import com.NorthernSec.NorthernMail.Objects.PubKey;
 import com.NorthernSec.NorthernMail.Objects.Util;
 
-public class KeyManager {
+public class KeyManager implements Serializable{
+	private static final long serialVersionUID = 1L;
 	private ArrayList<PubKey> publicKeys;
 	private ArrayList<PrivKey> privateKeys;
 	
@@ -30,7 +33,7 @@ public class KeyManager {
 		for(PubKey key:publicKeys){
 			if(key.getName().equals(name)){return key;}
 		}return null;}
-	public PubKey[] getPubKeys(){return (PubKey[])publicKeys.toArray();}
+	public PubKey[] getPubKeys(){return publicKeys.toArray(new PubKey[publicKeys.size()]);}
 	public void addPubKey(PubKey key) throws AlreadyExistsException{
 		if (getPubKey(key.getName())!=null){
 			throw new AlreadyExistsException("A key with this name already exists");}
@@ -43,14 +46,16 @@ public class KeyManager {
 		for(PrivKey key:privateKeys){
 			if(key.getName().equals(name)){return key;}}
 		return null;}
-	public PrivKey[] getPrivKeys(){return (PrivKey[])privateKeys.toArray();}
+	public PrivKey[] getPrivKeys(){return privateKeys.toArray(new PrivKey[privateKeys.size()]);}
 	public void addPrivKey(PrivKey key) throws AlreadyExistsException{
 		if (getPrivKey(key.getName())!=null){
 			throw new AlreadyExistsException("A key with this name already exists");}
 		privateKeys.add(key);}
 	public void removePrivKey(String name){
-		for(PrivKey key:privateKeys){
-			if(key.getName().equals(name)){privateKeys.remove(key);}}}
+		Iterator<PrivKey> it = privateKeys.iterator();
+		while(it.hasNext()){
+			PrivKey key = it.next();
+			if(key.getName().equals(name)){it.remove();}}}
 
 	
 	public void generateKeypair(int size, String name, String password) throws EncryptionException, IOException, InvalidKeyException, AlreadyExistsException{
@@ -63,7 +68,7 @@ public class KeyManager {
 			if (getPubKey(name)!=null){throw new AlreadyExistsException("A key with this name already exists");}
 			PubKey pubKey = new PubKey(name,keys.getPublic());
 			PrivKey privKey;
-			if(password.length()>0 && password != null){
+			if(password != null && password.length()>0){
 				final Cipher cipher=Cipher.getInstance("AES/CBC/PKCS5Padding");
 				final SecretKeySpec sks = new SecretKeySpec(Util.shaCreate(password), "AES");
 				cipher.init(Cipher.ENCRYPT_MODE, sks);
