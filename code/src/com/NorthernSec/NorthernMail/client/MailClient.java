@@ -54,7 +54,6 @@ public class MailClient {
 			  if(m.isDecryptable(keyMan)){
 				  myMails.add(m);}
 		  }catch (InvalidMailException e){}}
-	  System.out.println(myMails.size());
 	  return myMails.toArray(new Mail[myMails.size()]);
 	  //return new String(con.receive());
   }
@@ -75,6 +74,8 @@ public class MailClient {
 		  ConfigReader cr = new ConfigReader();
 		  //cr.create("/home/snorelax/NorthernMail.nmc");
 		  //Configuration c = cr.getConf();
+		  //c.setHost("127.0.0.1");
+		  //c.setPort(5002);
 		  //c.getKeyManager().generateKeypair(2048, "DummyKeyPair1", null);
 		  //c.getKeyManager().generateKeypair(1337, "DummyKeyPair2", null);
 		  //c.getKeyManager().generateKeypair(2048, "alice", null);
@@ -85,7 +86,7 @@ public class MailClient {
 		  cr.load("/home/snorelax/NorthernMail.nmc");
 		  MailClient mc = new MailClient(cr.getConf());
 		  KeyManager keyMan = cr.getConf().getKeyManager();
-		  mc.connect("127.0.0.1", 5002);
+		  mc.connect(cr.getConf().getHost(), cr.getConf().getPort());
 		  Thread.sleep(1000);
 		  //send
 		  MailTemplate m = new MailTemplate();
