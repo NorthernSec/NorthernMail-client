@@ -4,11 +4,11 @@ import com.NorthernSec.NorthernMail.Objects.PrivKey;
 import com.NorthernSec.NorthernMail.Objects.PubKey;
 
 public class DecryptedMail {
-	private String subject;
-	private String message;
-	private PubKey signedBy;
-	private PrivKey receiver;
-    private Boolean wasEncrypted;
+    private final String subject;
+    private final String message;
+    private final PubKey signedBy;
+    private final PrivKey receiver;
+    private final Boolean wasEncrypted;
     
     public DecryptedMail(String subj, String mess, PubKey signedBy, PrivKey receiver, Boolean encrypted){
     	subject=subj;message=mess;this.signedBy=signedBy;this.receiver=receiver;wasEncrypted=encrypted;
