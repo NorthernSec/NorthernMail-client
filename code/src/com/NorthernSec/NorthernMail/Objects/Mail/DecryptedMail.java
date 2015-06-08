@@ -15,7 +15,7 @@ public class DecryptedMail {
     }
     public String getSubject(){return subject;}
     public String getMessage(){return message;}
-    public String getSender(){return signedBy.getName();}
+    public String getSender(){if(signedBy != null){return signedBy.getName();}else{return null;}}
     public PubKey getSenderKey(){return signedBy;}
     public String getReceiver(){return receiver.getName();}
     public PrivKey getReveiverKey(){return receiver;}
