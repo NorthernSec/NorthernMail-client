@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import org.json.simple.parser.ParseException;
 
@@ -50,6 +52,9 @@ public class MainPanel extends javax.swing.JFrame {
         tblMails = new javax.swing.JTable();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu1 = new javax.swing.JMenu();
+        jMenu2 = new javax.swing.JMenu();
 
         jCheckBox1.setText("jCheckBox1");
 
@@ -69,6 +74,14 @@ public class MainPanel extends javax.swing.JFrame {
 
         jSplitPane1.setRightComponent(jScrollPane2);
 
+        jMenu1.setText("File");
+        jMenuBar1.add(jMenu1);
+
+        jMenu2.setText("Edit");
+        jMenuBar1.add(jMenu2);
+
+        setJMenuBar(jMenuBar1);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -77,7 +90,7 @@ public class MainPanel extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 600, Short.MAX_VALUE)
+            .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 579, Short.MAX_VALUE)
         );
 
         pack();
@@ -120,6 +133,9 @@ public class MainPanel extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBox1;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSplitPane jSplitPane1;
@@ -137,9 +153,14 @@ public class MainPanel extends javax.swing.JFrame {
     private void init(){
         cr=new ConfigReader();
         try {
-            cr.load("/home/snorelax/NorthernMail.nmc");
-            mc=new MailClient(cr.getConf());
-            keyMan = cr.getConf().getKeyManager();
+            final JFileChooser fc = new JFileChooser();
+            fc.setFileFilter(new FileNameExtensionFilter("NorthernMail Configuration (*.nmc)", "nmc"));
+            int returnVal = fc.showOpenDialog(jMenu1);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                cr.load("/home/snorelax/NorthernMail.nmc");
+                mc=new MailClient(cr.getConf());
+                keyMan = cr.getConf().getKeyManager();
+            }
         } catch (IOException ex) {
             Logger.getLogger(MainPanel.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ClassNotFoundException ex) {
@@ -149,11 +170,11 @@ public class MainPanel extends javax.swing.JFrame {
     
     private void fetchMails(){
         try {
+            //Checks
+            if(cr == null || mc == null || keyMan == null){return;}
             //Variables
-            ArrayList<DecryptedMail> myMails = new ArrayList<>();
             DefaultTableModel dtm = new DefaultTableModel();
             dtm.setColumnIdentifiers(new String[]{"Sender","Subject","Date"});
-            int corrupted = 0;
             //Fetching
             mc.connect(cr.getConf().getHost(), cr.getConf().getPort());
             for (Mail mail:mc.fetchMail()){
@@ -162,7 +183,6 @@ public class MainPanel extends javax.swing.JFrame {
                     dtm.addRow(new Object[]{m.getSender(), m.getSubject(), "TODO"});
                     System.out.println(mail.decrypt(keyMan).getSubject());
                 } catch (InvalidMailException ex) {
-                    corrupted++;
                 } catch (InvalidSignatureException ex) {
                     DecryptedMail m = ex.getMail();
                     dtm.addRow(new Object[]{"*Corrupted Signature*", m.getSubject(), "TODO"});
